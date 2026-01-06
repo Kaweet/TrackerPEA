@@ -146,9 +146,7 @@ export const useEntriesStore = defineStore('entries', () => {
     const endStr = format(end, 'yyyy-MM-dd')
 
     // Trouver le premier et dernier point dans la période
-    const entriesInPeriod = allEntries.value.filter(
-      e => e.date >= startStr && e.date <= endStr
-    )
+    const entriesInPeriod = allEntries.value.filter(e => e.date >= startStr && e.date <= endStr)
 
     if (entriesInPeriod.length === 0) return 0
 

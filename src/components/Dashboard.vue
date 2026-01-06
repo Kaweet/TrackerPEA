@@ -72,7 +72,8 @@ function formatDate(dateStr: string): string {
               'text-gray-400': entriesStore.lastWeekGain === 0
             }"
           >
-            {{ entriesStore.lastWeekGain > 0 ? '+' : '' }}{{ formatCurrency(entriesStore.lastWeekGain) }}
+            {{ entriesStore.lastWeekGain > 0 ? '+' : ''
+            }}{{ formatCurrency(entriesStore.lastWeekGain) }}
           </div>
         </div>
 
@@ -102,13 +103,14 @@ function formatDate(dateStr: string): string {
               'text-gray-400': entriesStore.lastMonthGain === 0
             }"
           >
-            {{ entriesStore.lastMonthGain > 0 ? '+' : '' }}{{ formatCurrency(entriesStore.lastMonthGain) }}
+            {{ entriesStore.lastMonthGain > 0 ? '+' : ''
+            }}{{ formatCurrency(entriesStore.lastMonthGain) }}
           </div>
         </div>
 
         <!-- Year -->
         <div class="bg-gray-700/50 rounded-lg p-3">
-          <div class="text-xs text-gray-400">Cette annee</div>
+          <div class="text-xs text-gray-400">Cette année</div>
           <div
             class="text-lg font-semibold"
             :class="{
@@ -150,10 +152,8 @@ function formatDate(dateStr: string): string {
           }}</span>
         </div>
         <div class="flex justify-between items-center">
-          <span class="text-gray-400">Total verse</span>
-          <span class="text-white font-semibold">{{
-            formatCurrency(totalDeposited)
-          }}</span>
+          <span class="text-gray-400">Total versé</span>
+          <span class="text-white font-semibold">{{ formatCurrency(totalDeposited) }}</span>
         </div>
         <div class="border-t border-gray-700 pt-3 flex justify-between items-center">
           <span class="text-gray-400">Performance globale</span>

@@ -42,7 +42,7 @@ function saveConfig() {
 }
 
 function resetAllData() {
-  if (confirm('Supprimer TOUTES les donnees (config, entrees, versements) ?')) {
+  if (confirm('Supprimer TOUTES les données (config, entrées, versements) ?')) {
     configStore.clearConfig()
     localStorage.removeItem('pea-entries')
     localStorage.removeItem('pea-deposits')
@@ -60,13 +60,13 @@ function resetAllData() {
       <h2 class="text-lg font-semibold text-white mb-4">Configuration initiale</h2>
 
       <p class="text-sm text-gray-400 mb-4">
-        Renseignez les informations de votre PEA au moment ou vous commencez le suivi.
-        Cela permet de calculer correctement vos gains meme si votre PEA existait deja.
+        Renseignez les informations de votre PEA au moment où vous commencez le suivi. Cela permet
+        de calculer correctement vos gains même si votre PEA existait déjà.
       </p>
 
       <div class="space-y-4">
         <div>
-          <label class="block text-sm text-gray-400 mb-1">Date de debut du suivi</label>
+          <label class="block text-sm text-gray-400 mb-1">Date de début du suivi</label>
           <input
             v-model="startDate"
             type="date"
@@ -75,7 +75,7 @@ function resetAllData() {
         </div>
 
         <div>
-          <label class="block text-sm text-gray-400 mb-1">Capital a cette date</label>
+          <label class="block text-sm text-gray-400 mb-1">Capital à cette date</label>
           <input
             v-model.number="startCapital"
             type="number"
@@ -84,13 +84,11 @@ function resetAllData() {
             class="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
             placeholder="0.00"
           />
-          <p class="text-xs text-gray-500 mt-1">
-            Valeur totale de votre PEA au debut du suivi
-          </p>
+          <p class="text-xs text-gray-500 mt-1">Valeur totale de votre PEA au début du suivi</p>
         </div>
 
         <div>
-          <label class="block text-sm text-gray-400 mb-1">Total deja verse a cette date</label>
+          <label class="block text-sm text-gray-400 mb-1">Total déjà versé à cette date</label>
           <input
             v-model.number="startDeposited"
             type="number"
@@ -100,7 +98,7 @@ function resetAllData() {
             placeholder="0.00"
           />
           <p class="text-xs text-gray-500 mt-1">
-            Somme de tous vos versements avant le debut du suivi
+            Somme de tous vos versements avant le début du suivi
           </p>
         </div>
 
@@ -108,18 +106,18 @@ function resetAllData() {
           class="w-full py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
           @click="saveConfig"
         >
-          {{ configStore.isConfigured ? 'Mettre a jour' : 'Enregistrer' }}
+          {{ configStore.isConfigured ? 'Mettre à jour' : 'Enregistrer' }}
         </button>
       </div>
     </div>
 
     <!-- Current state summary -->
     <div v-if="configStore.isConfigured" class="bg-gray-800 rounded-xl p-4">
-      <h2 class="text-lg font-semibold text-white mb-4">Resume</h2>
+      <h2 class="text-lg font-semibold text-white mb-4">Résumé</h2>
 
       <div class="space-y-3">
         <div class="flex justify-between text-sm">
-          <span class="text-gray-400">Date de debut</span>
+          <span class="text-gray-400">Date de début</span>
           <span class="text-white">{{ configStore.startDate }}</span>
         </div>
         <div class="flex justify-between text-sm">
@@ -127,22 +125,24 @@ function resetAllData() {
           <span class="text-white">{{ formatCurrency(configStore.startCapital) }}</span>
         </div>
         <div class="flex justify-between text-sm">
-          <span class="text-gray-400">Deja verse au depart</span>
+          <span class="text-gray-400">Déjà versé au départ</span>
           <span class="text-white">{{ formatCurrency(configStore.startDeposited) }}</span>
         </div>
         <div class="flex justify-between text-sm">
-          <span class="text-gray-400">Versements enregistres</span>
+          <span class="text-gray-400">Versements enregistrés</span>
           <span class="text-white">{{ formatCurrency(depositsStore.totalDeposited) }}</span>
         </div>
         <div class="flex justify-between text-sm border-t border-gray-700 pt-3">
-          <span class="text-gray-400">Total verse</span>
+          <span class="text-gray-400">Total versé</span>
           <span class="text-white font-medium">
             {{ formatCurrency(configStore.startDeposited + depositsStore.totalDeposited) }}
           </span>
         </div>
         <div class="flex justify-between text-sm">
           <span class="text-gray-400">Capital actuel</span>
-          <span class="text-white font-medium">{{ formatCurrency(entriesStore.currentCapital) }}</span>
+          <span class="text-white font-medium">{{
+            formatCurrency(entriesStore.currentCapital)
+          }}</span>
         </div>
         <div class="flex justify-between text-sm">
           <span class="text-gray-400">Gain total</span>
@@ -154,7 +154,7 @@ function resetAllData() {
           </span>
         </div>
         <div class="flex justify-between text-sm">
-          <span class="text-gray-400">Entrees enregistrees</span>
+          <span class="text-gray-400">Entrées enregistrées</span>
           <span class="text-white">{{ entriesStore.allEntries.length }}</span>
         </div>
       </div>
@@ -162,17 +162,17 @@ function resetAllData() {
 
     <!-- Danger zone -->
     <div class="bg-gray-800 rounded-xl p-4 border border-red-900/50">
-      <h2 class="text-lg font-semibold text-red-400 mb-4">Zone de danger</h2>
+      <h2 class="text-lg font-semibold text-red-400 mb-4">Attention</h2>
 
       <p class="text-sm text-gray-400 mb-4">
-        Ces actions sont irreversibles. Vos donnees seront definitivement supprimees.
+        Ces actions sont irréversibles. Vos données seront définitivement supprimées.
       </p>
 
       <button
         class="w-full py-3 rounded-lg bg-red-600/20 text-red-400 font-medium hover:bg-red-600/30 border border-red-600/50 transition-colors"
         @click="resetAllData"
       >
-        Reinitialiser toutes les donnees
+        Réinitialiser toutes les données
       </button>
     </div>
   </div>

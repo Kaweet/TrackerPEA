@@ -2,9 +2,40 @@
 import { ref, computed } from 'vue'
 import { format } from 'date-fns'
 import { useDepositsStore } from '../stores/deposits'
+import { useConfigStore } from '../stores/config'
 import { formatCurrency } from '../utils/calculations'
 
 const depositsStore = useDepositsStore()
+const configStore = useConfigStore()
+
+// Total versé incluant le montant initial
+const totalVerse = computed(() => configStore.startDeposited + depositsStore.totalDeposited)
+
+// Estimation du temps pour atteindre le plafond
+const timeToReachCeiling = computed(() => {
+  if (!depositsStore.dcaConfig.enabled || depositsStore.dcaConfig.amount <= 0) {
+    return null
+  }
+
+  const remaining = depositsStore.PEA_CEILING - totalVerse.value
+  if (remaining <= 0) return null
+
+  // Calcul du montant mensuel DCA
+  const versementsParMois = depositsStore.dcaConfig.dayOfMonth2 ? 2 : 1
+  const montantMensuel = depositsStore.dcaConfig.amount * versementsParMois
+
+  const moisRestants = Math.ceil(remaining / montantMensuel)
+  const annees = Math.floor(moisRestants / 12)
+  const mois = moisRestants % 12
+
+  if (annees > 0 && mois > 0) {
+    return `${annees} an${annees > 1 ? 's' : ''} et ${mois} mois`
+  } else if (annees > 0) {
+    return `${annees} an${annees > 1 ? 's' : ''}`
+  } else {
+    return `${mois} mois`
+  }
+})
 
 // Form pour versement ponctuel
 const date = ref(format(new Date(), 'yyyy-MM-dd'))
@@ -72,9 +103,9 @@ const nextDCADates = computed(() => {
     <!-- Progress to ceiling -->
     <div class="bg-gray-800 rounded-xl p-4">
       <div class="flex justify-between items-center mb-2">
-        <span class="text-gray-400">Plafond PEA</span>
+        <span class="text-gray-400">Objectif plafond PEA</span>
         <span class="text-white font-medium">
-          {{ formatCurrency(depositsStore.totalDeposited) }} /
+          {{ formatCurrency(totalVerse) }} /
           {{ formatCurrency(depositsStore.PEA_CEILING) }}
         </span>
       </div>
@@ -82,13 +113,23 @@ const nextDCADates = computed(() => {
       <div class="w-full bg-gray-700 rounded-full h-3">
         <div
           class="h-3 rounded-full transition-all duration-300"
-          :class="depositsStore.ceilingPercentage >= 100 ? 'bg-red-500' : 'bg-blue-500'"
-          :style="{ width: `${depositsStore.ceilingPercentage}%` }"
+          :class="
+            (totalVerse / depositsStore.PEA_CEILING) * 100 >= 100 ? 'bg-green-500' : 'bg-blue-500'
+          "
+          :style="{ width: `${Math.min(100, (totalVerse / depositsStore.PEA_CEILING) * 100)}%` }"
         />
       </div>
 
-      <div class="mt-2 text-sm text-gray-400">
-        Reste disponible : {{ formatCurrency(depositsStore.remainingToCeiling) }}
+      <div class="mt-2 flex justify-between items-center text-sm">
+        <span class="text-gray-400">
+          {{ ((totalVerse / depositsStore.PEA_CEILING) * 100).toFixed(1) }}% atteint
+        </span>
+        <span v-if="timeToReachCeiling" class="text-blue-400">
+          Plafond dans ~{{ timeToReachCeiling }}
+        </span>
+        <span v-else-if="totalVerse >= depositsStore.PEA_CEILING" class="text-green-400">
+          Plafond atteint !
+        </span>
       </div>
     </div>
 

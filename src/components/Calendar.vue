@@ -80,9 +80,7 @@ function getWeekGain(weekStart: Date): number {
   const startStr = format(weekStart, 'yyyy-MM-dd')
   const endStr = format(weekEnd, 'yyyy-MM-dd')
 
-  const entriesInWeek = entriesStore.allEntries.filter(
-    (e) => e.date >= startStr && e.date <= endStr
-  )
+  const entriesInWeek = entriesStore.allEntries.filter(e => e.date >= startStr && e.date <= endStr)
 
   if (entriesInWeek.length === 0) return 0
 
@@ -91,7 +89,7 @@ function getWeekGain(weekStart: Date): number {
 
   const refCapital = entriesStore.getPreviousEntry(firstEntry.date)?.capital ?? 0
   const depositsInWeek = depositsStore.deposits
-    .filter((d) => d.date >= startStr && d.date <= lastEntry.date)
+    .filter(d => d.date >= startStr && d.date <= lastEntry.date)
     .reduce((sum, d) => sum + d.amount, 0)
 
   return lastEntry.capital - (refCapital || firstEntry.capital) - depositsInWeek
@@ -104,9 +102,7 @@ const monthGain = computed(() => {
   const startStr = format(monthStart, 'yyyy-MM-dd')
   const endStr = format(monthEnd, 'yyyy-MM-dd')
 
-  const entriesInMonth = entriesStore.allEntries.filter(
-    (e) => e.date >= startStr && e.date <= endStr
-  )
+  const entriesInMonth = entriesStore.allEntries.filter(e => e.date >= startStr && e.date <= endStr)
 
   if (entriesInMonth.length === 0) return 0
 
@@ -115,7 +111,7 @@ const monthGain = computed(() => {
 
   const refCapital = entriesStore.getPreviousEntry(firstEntry.date)?.capital ?? 0
   const depositsInMonth = depositsStore.deposits
-    .filter((d) => d.date >= startStr && d.date <= lastEntry.date)
+    .filter(d => d.date >= startStr && d.date <= lastEntry.date)
     .reduce((sum, d) => sum + d.amount, 0)
 
   return lastEntry.capital - (refCapital || firstEntry.capital) - depositsInMonth
@@ -231,7 +227,9 @@ function getDateStr(date: Date): string {
           :key="index"
           :day="item.day"
           :has-entry="item.day ? !!entriesStore.getEntry(getDateStr(item.date)) : false"
-          :performance="item.day ? entriesStore.calculateDayPerformance(getDateStr(item.date)) : null"
+          :performance="
+            item.day ? entriesStore.calculateDayPerformance(getDateStr(item.date)) : null
+          "
           :is-today="item.day ? isToday(item.date) : false"
           :is-selected="item.day ? isSelected(item.date) : false"
           :is-d-c-a-day="item.day ? depositsStore.isDCADate(getDateStr(item.date)) : false"

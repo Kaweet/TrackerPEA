@@ -6,6 +6,14 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 
 ## [Unreleased]
 
+### Changed
+- Section plafond PEA reformulée en "Objectif plafond PEA" avec pourcentage atteint
+- Affichage du total versé incluant le montant initial configuré
+- Estimation du temps pour atteindre le plafond basée sur le DCA configuré
+
+### Fixed
+- Correction de tous les accents français manquants dans l'interface
+
 ### Added
 - Vue calendrier mensuelle avec navigation
 - Saisie quotidienne du capital (calcul automatique de la performance)
@@ -26,13 +34,3 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 - TailwindCSS pour le styling
 - date-fns pour la gestion des dates
 - vite-plugin-pwa pour la PWA
-
----
-
-## Checklist avant commit
-
-- [ ] `npm run lint` passe sans erreur
-- [ ] `npm run build` compile sans erreur
-- [ ] Tester sur mobile (responsive)
-- [ ] Vérifier les types TypeScript
-- [ ] Mettre à jour ce CHANGELOG si nécessaire
