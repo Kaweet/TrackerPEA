@@ -15,6 +15,8 @@ const startCapital = ref(configStore.startCapital || 0)
 const startDeposited = ref(configStore.startDeposited || 0)
 
 const showResetConfirm = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+const importMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
 onMounted(() => {
   if (configStore.isConfigured) {
@@ -41,12 +43,65 @@ function saveConfig() {
   }
 }
 
+function exportData() {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    config: localStorage.getItem('pea-config'),
+    entries: localStorage.getItem('pea-entries'),
+    deposits: localStorage.getItem('pea-deposits'),
+    dcaConfig: localStorage.getItem('pea-dca-config')
+  }
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `pea-backup-${format(new Date(), 'yyyy-MM-dd')}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function triggerImport() {
+  fileInput.value?.click()
+}
+
+function handleImport(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target?.result as string)
+
+      if (!data.version || !data.config) {
+        throw new Error('Format de fichier invalide')
+      }
+
+      if (data.config) localStorage.setItem('pea-config', data.config)
+      if (data.entries) localStorage.setItem('pea-entries', data.entries)
+      if (data.deposits) localStorage.setItem('pea-deposits', data.deposits)
+      if (data.dcaConfig) localStorage.setItem('pea-dca-config', data.dcaConfig)
+
+      importMessage.value = { type: 'success', text: 'Import réussi ! Rechargement...' }
+      setTimeout(() => window.location.reload(), 1000)
+    } catch {
+      importMessage.value = { type: 'error', text: 'Erreur lors de l\'import du fichier' }
+      setTimeout(() => (importMessage.value = null), 3000)
+    }
+  }
+  reader.readAsText(file)
+  input.value = ''
+}
+
 function resetAllData() {
   if (confirm('Supprimer TOUTES les données (config, entrées, versements) ?')) {
     configStore.clearConfig()
     localStorage.removeItem('pea-entries')
     localStorage.removeItem('pea-deposits')
-    localStorage.removeItem('pea-dca')
+    localStorage.removeItem('pea-dca-config')
     window.location.reload()
   }
   showResetConfirm.value = false
@@ -157,6 +212,46 @@ function resetAllData() {
           <span class="text-gray-400">Entrées enregistrées</span>
           <span class="text-white">{{ entriesStore.allEntries.length }}</span>
         </div>
+      </div>
+    </div>
+
+    <!-- Export/Import -->
+    <div class="bg-gray-800 rounded-xl p-4">
+      <h2 class="text-lg font-semibold text-white mb-4">Sauvegarde</h2>
+
+      <p class="text-sm text-gray-400 mb-4">
+        Exportez vos données pour les sauvegarder ou les transférer sur un autre appareil.
+      </p>
+
+      <div class="flex gap-3">
+        <button
+          class="flex-1 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+          @click="exportData"
+        >
+          Exporter
+        </button>
+        <button
+          class="flex-1 py-3 rounded-lg bg-gray-700 text-white font-medium hover:bg-gray-600 transition-colors"
+          @click="triggerImport"
+        >
+          Importer
+        </button>
+      </div>
+
+      <input
+        ref="fileInput"
+        type="file"
+        accept=".json"
+        class="hidden"
+        @change="handleImport"
+      />
+
+      <div
+        v-if="importMessage"
+        class="mt-3 p-3 rounded-lg text-sm"
+        :class="importMessage.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
+      >
+        {{ importMessage.text }}
       </div>
     </div>
 

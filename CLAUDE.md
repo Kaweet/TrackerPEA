@@ -241,3 +241,4 @@ npm run format   # Formatter (Prettier)
 - [ ] `npm run build` compile sans erreur
 - [ ] Tester sur mobile (responsive)
 - [ ] Vérifier les types TypeScript
+- [ ] **Mettre à jour CHANGELOG.md** avec les modifications

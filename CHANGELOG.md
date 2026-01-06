@@ -15,6 +15,9 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 - Correction de tous les accents français manquants dans l'interface
 
 ### Added
+- Export/import des données en JSON pour sauvegarde et transfert entre appareils
+
+### Previously Added
 - Vue calendrier mensuelle avec navigation
 - Saisie quotidienne du capital (calcul automatique de la performance)
 - Dashboard avec récapitulatif des gains (jour/semaine/mois/année/total)
