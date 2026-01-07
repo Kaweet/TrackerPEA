@@ -4,6 +4,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
+## [1.1.0] - 2026-01-07
+
+### Changed
+- Authentification simplifiée: connexion Google uniquement (plus de création de compte email)
+
 ## [1.0.0] - 2026-01-07
 
 ### Changed

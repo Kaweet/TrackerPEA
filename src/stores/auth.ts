@@ -27,37 +27,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function signUp(email: string, password: string) {
+  async function signInWithGoogle() {
     loading.value = true
     error.value = null
     try {
-      const { data, error: authError } = await supabase.auth.signUp({
-        email,
-        password
+      const { error: authError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/TrackerPEA/'
+        }
       })
       if (authError) throw authError
-      return data
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Erreur lors de l\'inscription'
-      throw e
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function signIn(email: string, password: string) {
-    loading.value = true
-    error.value = null
-    try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-      if (authError) throw authError
-      user.value = data.user
-      return data
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Erreur lors de la connexion'
+      error.value = e instanceof Error ? e.message : 'Erreur lors de la connexion Google'
       throw e
     } finally {
       loading.value = false
@@ -85,8 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
     error,
     isAuthenticated,
     initialize,
-    signUp,
-    signIn,
+    signInWithGoogle,
     signOut
   }
 })
