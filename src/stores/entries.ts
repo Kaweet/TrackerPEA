@@ -216,22 +216,37 @@ export const useEntriesStore = defineStore('entries', () => {
     const startStr = format(start, 'yyyy-MM-dd')
     const endStr = format(end, 'yyyy-MM-dd')
 
-    // Trouver le premier et dernier point dans la période
+    // Trouver le dernier point dans la période
     const entriesInPeriod = allEntries.value.filter(e => e.date >= startStr && e.date <= endStr)
 
     if (entriesInPeriod.length === 0) return 0
 
-    const firstEntry = entriesInPeriod[0]!
     const lastEntry = entriesInPeriod[entriesInPeriod.length - 1]!
 
-    // Capital de référence avant le premier point
-    const refCapital = getReferenceCapital(firstEntry.date)
+    // Capital de référence au début de la période
+    // On cherche l'entrée la plus récente AVANT le début de la période
+    const entriesBeforePeriod = allEntries.value.filter(e => e.date < startStr)
+    let refCapital: number
 
-    // Versements pendant la période (entre ref et dernier point)
+    if (entriesBeforePeriod.length > 0) {
+      // Prendre la dernière entrée avant le début de la période
+      refCapital = entriesBeforePeriod[entriesBeforePeriod.length - 1]!.capital
+    } else {
+      // Sinon utiliser la config initiale si disponible
+      const configStore = useConfigStore()
+      if (configStore.isConfigured && startStr >= configStore.startDate) {
+        refCapital = configStore.startCapital
+      } else {
+        // Pas de référence, on ne peut pas calculer de gain
+        return 0
+      }
+    }
+
+    // Versements pendant la période (du début de la période jusqu'au dernier point)
     const depositsStore = useDepositsStore()
     const depositsInPeriod = depositsStore.getDepositsInRange(startStr, lastEntry.date)
 
-    // Gain = capital final - capital initial de ref - versements
+    // Gain = capital final - capital de référence - versements de la période
     return lastEntry.capital - refCapital - depositsInPeriod
   }
 
