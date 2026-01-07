@@ -232,9 +232,11 @@ export const useEntriesStore = defineStore('entries', () => {
       // Prendre la dernière entrée avant le début de la période
       refCapital = entriesBeforePeriod[entriesBeforePeriod.length - 1]!.capital
     } else {
-      // Sinon utiliser la config initiale si disponible
+      // Pas d'entrée avant la période, chercher la première entrée DANS la période
+      // et utiliser la config si elle est antérieure ou égale à cette première entrée
       const configStore = useConfigStore()
-      if (configStore.isConfigured && startStr >= configStore.startDate) {
+      const firstEntryInPeriod = entriesInPeriod[0]
+      if (configStore.isConfigured && firstEntryInPeriod && configStore.startDate <= firstEntryInPeriod.date) {
         refCapital = configStore.startCapital
       } else {
         // Pas de référence, on ne peut pas calculer de gain
