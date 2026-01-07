@@ -4,19 +4,17 @@ import { format } from 'date-fns'
 import { useConfigStore } from '../stores/config'
 import { useEntriesStore } from '../stores/entries'
 import { useDepositsStore } from '../stores/deposits'
+import { useAuthStore } from '../stores/auth'
 import { formatCurrency } from '../utils/calculations'
 
 const configStore = useConfigStore()
 const entriesStore = useEntriesStore()
 const depositsStore = useDepositsStore()
+const authStore = useAuthStore()
 
 const startDate = ref(configStore.startDate || format(new Date(), 'yyyy-MM-dd'))
 const startCapital = ref(configStore.startCapital || 0)
 const startDeposited = ref(configStore.startDeposited || 0)
-
-const showResetConfirm = ref(false)
-const fileInput = ref<HTMLInputElement | null>(null)
-const importMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
 onMounted(() => {
   if (configStore.isConfigured) {
@@ -33,67 +31,14 @@ function saveConfig() {
     startDeposited: startDeposited.value
   })
 
-  // Creer automatiquement une entree pour la date de debut
-  // si elle n'existe pas deja
+  // Créer automatiquement une entrée pour la date de début
+  // si elle n'existe pas déjà
   if (!entriesStore.getEntry(startDate.value)) {
     entriesStore.addEntry({
       date: startDate.value,
       capital: startCapital.value
     })
   }
-}
-
-function exportData() {
-  const data = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    config: localStorage.getItem('pea-config'),
-    entries: localStorage.getItem('pea-entries'),
-    deposits: localStorage.getItem('pea-deposits'),
-    dcaConfig: localStorage.getItem('pea-dca-config')
-  }
-
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `pea-backup-${format(new Date(), 'yyyy-MM-dd')}.json`
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-function triggerImport() {
-  fileInput.value?.click()
-}
-
-function handleImport(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    try {
-      const data = JSON.parse(e.target?.result as string)
-
-      if (!data.version || !data.config) {
-        throw new Error('Format de fichier invalide')
-      }
-
-      if (data.config) localStorage.setItem('pea-config', data.config)
-      if (data.entries) localStorage.setItem('pea-entries', data.entries)
-      if (data.deposits) localStorage.setItem('pea-deposits', data.deposits)
-      if (data.dcaConfig) localStorage.setItem('pea-dca-config', data.dcaConfig)
-
-      importMessage.value = { type: 'success', text: 'Import réussi ! Rechargement...' }
-      setTimeout(() => window.location.reload(), 1000)
-    } catch {
-      importMessage.value = { type: 'error', text: 'Erreur lors de l\'import du fichier' }
-      setTimeout(() => (importMessage.value = null), 3000)
-    }
-  }
-  reader.readAsText(file)
-  input.value = ''
 }
 
 function resetAllData() {
@@ -104,12 +49,22 @@ function resetAllData() {
     localStorage.removeItem('pea-dca-config')
     window.location.reload()
   }
-  showResetConfirm.value = false
 }
 </script>
 
 <template>
   <div class="space-y-4">
+    <!-- User info -->
+    <div class="bg-gray-800 rounded-xl p-4">
+      <h2 class="text-lg font-semibold text-white mb-2">Compte</h2>
+      <p class="text-sm text-gray-400">
+        Connecté en tant que <span class="text-white">{{ authStore.user?.email }}</span>
+      </p>
+      <p class="text-xs text-green-400 mt-1">
+        Vos données sont synchronisées automatiquement
+      </p>
+    </div>
+
     <!-- Initial config -->
     <div class="bg-gray-800 rounded-xl p-4">
       <h2 class="text-lg font-semibold text-white mb-4">Configuration initiale</h2>
@@ -212,46 +167,6 @@ function resetAllData() {
           <span class="text-gray-400">Entrées enregistrées</span>
           <span class="text-white">{{ entriesStore.allEntries.length }}</span>
         </div>
-      </div>
-    </div>
-
-    <!-- Export/Import -->
-    <div class="bg-gray-800 rounded-xl p-4">
-      <h2 class="text-lg font-semibold text-white mb-4">Sauvegarde</h2>
-
-      <p class="text-sm text-gray-400 mb-4">
-        Exportez vos données pour les sauvegarder ou les transférer sur un autre appareil.
-      </p>
-
-      <div class="flex gap-3">
-        <button
-          class="flex-1 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
-          @click="exportData"
-        >
-          Exporter
-        </button>
-        <button
-          class="flex-1 py-3 rounded-lg bg-gray-700 text-white font-medium hover:bg-gray-600 transition-colors"
-          @click="triggerImport"
-        >
-          Importer
-        </button>
-      </div>
-
-      <input
-        ref="fileInput"
-        type="file"
-        accept=".json"
-        class="hidden"
-        @change="handleImport"
-      />
-
-      <div
-        v-if="importMessage"
-        class="mt-3 p-3 rounded-lg text-sm"
-        :class="importMessage.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
-      >
-        {{ importMessage.text }}
       </div>
     </div>
 

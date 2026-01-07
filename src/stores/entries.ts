@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import type { DailyEntry, DayPerformance } from '../types'
 import { useDepositsStore } from './deposits'
 import { useConfigStore } from './config'
+import { useAuthStore } from './auth'
+import { supabase } from '../lib/supabase'
 import {
   startOfWeek,
   endOfWeek,
@@ -21,6 +23,7 @@ const STORAGE_KEY = 'pea-entries'
 
 export const useEntriesStore = defineStore('entries', () => {
   const entries = ref<Map<string, DailyEntry>>(new Map())
+  const loading = ref(false)
 
   function loadFromStorage() {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -35,18 +38,86 @@ export const useEntriesStore = defineStore('entries', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   }
 
-  function addEntry(entry: DailyEntry) {
+  async function loadFromSupabase() {
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated) return
+
+    loading.value = true
+    try {
+      const { data, error } = await supabase
+        .from('entries')
+        .select('*')
+        .order('date', { ascending: true })
+
+      if (error) throw error
+
+      if (data) {
+        entries.value = new Map(
+          data.map(e => [e.date, { date: e.date, capital: Number(e.capital), note: e.note ?? undefined }])
+        )
+        saveToStorage()
+      }
+    } catch (e) {
+      console.error('Error loading entries from Supabase:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function saveEntryToSupabase(entry: DailyEntry) {
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated || !authStore.user) return
+
+    try {
+      const { error } = await supabase
+        .from('entries')
+        .upsert({
+          user_id: authStore.user.id,
+          date: entry.date,
+          capital: entry.capital,
+          note: entry.note ?? null
+        }, { onConflict: 'user_id,date' })
+
+      if (error) throw error
+    } catch (e) {
+      console.error('Error saving entry to Supabase:', e)
+    }
+  }
+
+  async function deleteEntryFromSupabase(date: string) {
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated) return
+
+    try {
+      const { error } = await supabase
+        .from('entries')
+        .delete()
+        .eq('date', date)
+
+      if (error) throw error
+    } catch (e) {
+      console.error('Error deleting entry from Supabase:', e)
+    }
+  }
+
+  async function addEntry(entry: DailyEntry) {
     entries.value.set(entry.date, entry)
     saveToStorage()
+    await saveEntryToSupabase(entry)
   }
 
   function getEntry(date: string): DailyEntry | undefined {
     return entries.value.get(date)
   }
 
-  function deleteEntry(date: string) {
+  async function deleteEntry(date: string) {
     entries.value.delete(date)
     saveToStorage()
+    await deleteEntryFromSupabase(date)
+  }
+
+  async function syncWithSupabase() {
+    await loadFromSupabase()
   }
 
   const allEntries = computed(() =>
@@ -257,6 +328,7 @@ export const useEntriesStore = defineStore('entries', () => {
 
   return {
     entries,
+    loading,
     allEntries,
     latestEntry,
     currentCapital,
@@ -274,6 +346,7 @@ export const useEntriesStore = defineStore('entries', () => {
     deleteEntry,
     getPreviousEntry,
     calculateDayPerformance,
-    getPerformancesInRange
+    getPerformancesInRange,
+    syncWithSupabase
   }
 })

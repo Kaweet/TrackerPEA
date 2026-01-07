@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Deposit, DCAConfig } from '../types'
+import { useAuthStore } from './auth'
+import { supabase } from '../lib/supabase'
 import {
   format,
   parseISO,
@@ -26,6 +28,7 @@ export const useDepositsStore = defineStore('deposits', () => {
     dayOfMonth2: 15,
     adjustWeekend: 'after'
   })
+  const loading = ref(false)
 
   function loadFromStorage() {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -46,9 +49,118 @@ export const useDepositsStore = defineStore('deposits', () => {
     localStorage.setItem(DCA_CONFIG_KEY, JSON.stringify(dcaConfig.value))
   }
 
-  function updateDCAConfig(config: Partial<DCAConfig>) {
+  async function loadFromSupabase() {
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated) return
+
+    loading.value = true
+    try {
+      // Load deposits
+      const { data: depositsData, error: depositsError } = await supabase
+        .from('deposits')
+        .select('*')
+        .order('date', { ascending: true })
+
+      if (depositsError) throw depositsError
+
+      if (depositsData) {
+        deposits.value = depositsData.map(d => ({
+          id: d.id,
+          date: d.date,
+          amount: Number(d.amount),
+          note: d.note ?? undefined
+        }))
+        saveToStorage()
+      }
+
+      // Load DCA config
+      const { data: dcaData, error: dcaError } = await supabase
+        .from('dca_config')
+        .select('*')
+        .single()
+
+      if (dcaError && dcaError.code !== 'PGRST116') throw dcaError
+
+      if (dcaData) {
+        dcaConfig.value = {
+          enabled: dcaData.enabled,
+          amount: Number(dcaData.amount),
+          dayOfMonth1: dcaData.day_of_month_1,
+          dayOfMonth2: dcaData.day_of_month_2 ?? undefined,
+          adjustWeekend: 'after' // Default, not stored in DB for simplicity
+        }
+        saveDCAConfig()
+      }
+    } catch (e) {
+      console.error('Error loading deposits from Supabase:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function saveDepositToSupabase(deposit: Deposit) {
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated || !authStore.user) return
+
+    try {
+      const { error } = await supabase
+        .from('deposits')
+        .upsert({
+          id: deposit.id,
+          user_id: authStore.user.id,
+          date: deposit.date,
+          amount: deposit.amount,
+          note: deposit.note ?? null
+        })
+
+      if (error) throw error
+    } catch (e) {
+      console.error('Error saving deposit to Supabase:', e)
+    }
+  }
+
+  async function deleteDepositFromSupabase(id: string) {
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated) return
+
+    try {
+      const { error } = await supabase
+        .from('deposits')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+    } catch (e) {
+      console.error('Error deleting deposit from Supabase:', e)
+    }
+  }
+
+  async function saveDCAConfigToSupabase() {
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated || !authStore.user) return
+
+    try {
+      const { error } = await supabase
+        .from('dca_config')
+        .upsert({
+          user_id: authStore.user.id,
+          enabled: dcaConfig.value.enabled,
+          amount: dcaConfig.value.amount,
+          day_of_month_1: dcaConfig.value.dayOfMonth1,
+          day_of_month_2: dcaConfig.value.dayOfMonth2 ?? null,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' })
+
+      if (error) throw error
+    } catch (e) {
+      console.error('Error saving DCA config to Supabase:', e)
+    }
+  }
+
+  async function updateDCAConfig(config: Partial<DCAConfig>) {
     dcaConfig.value = { ...dcaConfig.value, ...config }
     saveDCAConfig()
+    await saveDCAConfigToSupabase()
   }
 
   // Ajuste une date si elle tombe un weekend
@@ -101,7 +213,7 @@ export const useDepositsStore = defineStore('deposits', () => {
     return isDCADate(dateStr) ? dcaConfig.value.amount : 0
   }
 
-  function addDeposit(deposit: Omit<Deposit, 'id'>) {
+  async function addDeposit(deposit: Omit<Deposit, 'id'>) {
     const newDeposit: Deposit = {
       ...deposit,
       id: crypto.randomUUID()
@@ -109,13 +221,15 @@ export const useDepositsStore = defineStore('deposits', () => {
     deposits.value.push(newDeposit)
     deposits.value.sort((a, b) => a.date.localeCompare(b.date))
     saveToStorage()
+    await saveDepositToSupabase(newDeposit)
   }
 
-  function deleteDeposit(id: string) {
+  async function deleteDeposit(id: string) {
     const index = deposits.value.findIndex(d => d.id === id)
     if (index !== -1) {
       deposits.value.splice(index, 1)
       saveToStorage()
+      await deleteDepositFromSupabase(id)
     }
   }
 
@@ -133,6 +247,10 @@ export const useDepositsStore = defineStore('deposits', () => {
     return deposits.value
       .filter(d => d.date >= startDate && d.date <= endDate)
       .reduce((sum, d) => sum + d.amount, 0)
+  }
+
+  async function syncWithSupabase() {
+    await loadFromSupabase()
   }
 
   const totalDeposited = computed(() => deposits.value.reduce((sum, d) => sum + d.amount, 0))
@@ -153,6 +271,7 @@ export const useDepositsStore = defineStore('deposits', () => {
   return {
     deposits,
     dcaConfig,
+    loading,
     sortedDeposits,
     totalDeposited,
     remainingToCeiling,
@@ -165,6 +284,7 @@ export const useDepositsStore = defineStore('deposits', () => {
     getDepositsInRange,
     getDCADatesForMonth,
     getDCAAmountForDate,
-    isDCADate
+    isDCADate,
+    syncWithSupabase
   }
 })

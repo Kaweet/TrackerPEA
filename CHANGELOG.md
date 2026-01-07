@@ -4,7 +4,7 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
-## [Unreleased]
+## [1.0.0] - 2026-01-07
 
 ### Changed
 - Section plafond PEA reformulée en "Objectif plafond PEA" avec pourcentage atteint
@@ -15,7 +15,10 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 - Correction de tous les accents français manquants dans l'interface
 
 ### Added
-- Export/import des données en JSON pour sauvegarde et transfert entre appareils
+- Authentification utilisateur avec Supabase
+  - Inscription / connexion par email
+  - Chaque utilisateur a ses propres données isolées (Row Level Security)
+- Synchronisation cloud des données entre appareils
 
 ### Previously Added
 - Vue calendrier mensuelle avec navigation
@@ -37,3 +40,4 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 - TailwindCSS pour le styling
 - date-fns pour la gestion des dates
 - vite-plugin-pwa pour la PWA
+- Supabase pour l'authentification et la base de données

@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useAuthStore } from './stores/auth'
+import { useConfigStore } from './stores/config'
+import { useEntriesStore } from './stores/entries'
+import { useDepositsStore } from './stores/deposits'
+import AuthForm from './components/AuthForm.vue'
 import Calendar from './components/Calendar.vue'
 import EntryForm from './components/EntryForm.vue'
 import Dashboard from './components/Dashboard.vue'
@@ -8,8 +13,30 @@ import Settings from './components/Settings.vue'
 
 type Tab = 'calendar' | 'dashboard' | 'deposits' | 'settings'
 
+const authStore = useAuthStore()
+const configStore = useConfigStore()
+const entriesStore = useEntriesStore()
+const depositsStore = useDepositsStore()
+
 const currentTab = ref<Tab>('calendar')
 const selectedDate = ref<string | null>(null)
+const initializing = ref(true)
+
+onMounted(async () => {
+  await authStore.initialize()
+  initializing.value = false
+})
+
+// Sync data when user logs in
+watch(() => authStore.isAuthenticated, async (isAuth) => {
+  if (isAuth) {
+    await Promise.all([
+      configStore.syncWithSupabase(),
+      entriesStore.syncWithSupabase(),
+      depositsStore.syncWithSupabase()
+    ])
+  }
+})
 
 function onSelectDate(date: string) {
   selectedDate.value = date
@@ -18,14 +45,33 @@ function onSelectDate(date: string) {
 function closeForm() {
   selectedDate.value = null
 }
+
+async function handleLogout() {
+  await authStore.signOut()
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-900 text-white pb-20">
+  <!-- Loading state -->
+  <div v-if="initializing" class="min-h-screen bg-gray-900 flex items-center justify-center">
+    <div class="text-white">Chargement...</div>
+  </div>
+
+  <!-- Auth form if not logged in -->
+  <AuthForm v-else-if="!authStore.isAuthenticated" />
+
+  <!-- Main app -->
+  <div v-else class="min-h-screen bg-gray-900 text-white pb-20">
     <!-- Header -->
     <header class="sticky top-0 z-40 bg-gray-900/95 backdrop-blur border-b border-gray-800">
-      <div class="px-4 py-3">
-        <h1 class="text-xl font-bold text-center">PEA Tracker</h1>
+      <div class="px-4 py-3 flex items-center justify-between">
+        <h1 class="text-xl font-bold">PEA Tracker</h1>
+        <button
+          @click="handleLogout"
+          class="text-gray-400 hover:text-white text-sm"
+        >
+          Déconnexion
+        </button>
       </div>
     </header>
 
